@@ -5,6 +5,7 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.provider.Settings
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.animateColorAsState
@@ -23,14 +24,20 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Delete
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -43,7 +50,10 @@ import androidx.compose.runtime.State
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableLongStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.TransformOrigin
@@ -59,10 +69,16 @@ import at.cloudplay.musicos.LyricsState
 import at.cloudplay.musicos.MIC_SOURCE
 import at.cloudplay.musicos.MainViewModel
 import at.cloudplay.musicos.MicState
+import at.cloudplay.musicos.UpdateState
+import at.cloudplay.musicos.history.HistoryEntry
 import at.cloudplay.musicos.lyrics.LrcParser
 import at.cloudplay.musicos.lyrics.LyricLine
 import at.cloudplay.musicos.media.NowPlaying
 import kotlinx.coroutines.delay
+import java.time.Instant
+import java.time.LocalDate
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 import java.util.Locale
 
 @Composable
@@ -72,6 +88,10 @@ fun MusicOsApp(vm: MainViewModel) {
     val lyrics by vm.lyrics.collectAsStateWithLifecycle()
     val offsetMs by vm.offsetMs.collectAsStateWithLifecycle()
     val micState by vm.micState.collectAsStateWithLifecycle()
+    val historyEntries by vm.historyEntries.collectAsStateWithLifecycle()
+    val update by vm.update.collectAsStateWithLifecycle()
+    var showHistory by rememberSaveable { mutableStateOf(false) }
+    BackHandler(enabled = showHistory) { showHistory = false }
 
     val context = LocalContext.current
     val micPermissionLauncher = rememberLauncherForActivityResult(
@@ -89,41 +109,54 @@ fun MusicOsApp(vm: MainViewModel) {
                 .fillMaxSize()
                 .safeDrawingPadding()
         ) {
-            val track = nowPlaying
-            if (track == null) {
-                Box(Modifier.weight(1f)) {
-                    HomeScreen(
-                        hasNotificationAccess = hasPermission,
-                        listening = micState is MicState.Listening,
-                        onMicClick = onMicClick,
-                    )
-                }
-                MicBar(
-                    state = micState,
-                    showButton = false,
-                    isMicTrack = false,
-                    onMicClick = onMicClick,
-                    onCancel = vm::cancelListening,
-                    onDismiss = vm::dismissMicMessage,
+            if (showHistory) {
+                HistoryScreen(
+                    entries = historyEntries,
+                    onBack = { showHistory = false },
+                    onDelete = vm::deleteHistoryEntry,
+                    onClearAll = vm::clearHistory,
                 )
             } else {
-                val position = rememberPlaybackPosition(track, offsetMs)
-                val isMicTrack = track.packageName == MIC_SOURCE
-                TrackHeader(track, position, isMicTrack, onClose = vm::closeMicTrack)
-                Box(Modifier.weight(1f)) {
-                    LyricsPane(lyrics, position, onRetry = vm::retry)
+                TopBar(onHistoryClick = { showHistory = true })
+                UpdateBanner(update, onUpdate = vm::startUpdate, onDismiss = vm::dismissUpdate)
+
+                val track = nowPlaying
+                if (track == null) {
+                    Box(Modifier.weight(1f)) {
+                        HomeScreen(
+                            versionName = vm.versionName,
+                            hasNotificationAccess = hasPermission,
+                            listening = micState is MicState.Listening,
+                            onMicClick = onMicClick,
+                        )
+                    }
+                    MicBar(
+                        state = micState,
+                        showButton = false,
+                        isMicTrack = false,
+                        onMicClick = onMicClick,
+                        onCancel = vm::cancelListening,
+                        onDismiss = vm::dismissMicMessage,
+                    )
+                } else {
+                    val position = rememberPlaybackPosition(track, offsetMs)
+                    val isMicTrack = track.packageName == MIC_SOURCE
+                    TrackHeader(track, position, isMicTrack, onClose = vm::closeMicTrack)
+                    Box(Modifier.weight(1f)) {
+                        LyricsPane(lyrics, position, onRetry = vm::retry)
+                    }
+                    if (lyrics is LyricsState.Synced) {
+                        SyncBar(offsetMs, onNudge = vm::nudgeOffset)
+                    }
+                    MicBar(
+                        state = micState,
+                        showButton = true,
+                        isMicTrack = isMicTrack,
+                        onMicClick = onMicClick,
+                        onCancel = vm::cancelListening,
+                        onDismiss = vm::dismissMicMessage,
+                    )
                 }
-                if (lyrics is LyricsState.Synced) {
-                    SyncBar(offsetMs, onNudge = vm::nudgeOffset)
-                }
-                MicBar(
-                    state = micState,
-                    showButton = true,
-                    isMicTrack = isMicTrack,
-                    onMicClick = onMicClick,
-                    onCancel = vm::cancelListening,
-                    onDismiss = vm::dismissMicMessage,
-                )
             }
         }
     }
@@ -146,7 +179,12 @@ private fun rememberPlaybackPosition(track: NowPlaying, offsetMs: Long): State<L
 // ---------- Startbildschirm ----------
 
 @Composable
-private fun HomeScreen(hasNotificationAccess: Boolean, listening: Boolean, onMicClick: () -> Unit) {
+private fun HomeScreen(
+    versionName: String,
+    hasNotificationAccess: Boolean,
+    listening: Boolean,
+    onMicClick: () -> Unit,
+) {
     val context = LocalContext.current
     val colors = MaterialTheme.colorScheme
     Column(
@@ -155,9 +193,7 @@ private fun HomeScreen(hasNotificationAccess: Boolean, listening: Boolean, onMic
             .verticalScroll(rememberScrollState())
             .padding(horizontal = 32.dp, vertical = 24.dp)
     ) {
-        Spacer(Modifier.height(24.dp))
-        Text("🎤 Music-os", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
-        Spacer(Modifier.height(24.dp))
+        Spacer(Modifier.height(8.dp))
 
         Button(
             onClick = onMicClick,
@@ -219,7 +255,199 @@ private fun HomeScreen(hasNotificationAccess: Boolean, listening: Boolean, onMic
                 },
             ) { Text("App-Infos öffnen") }
         }
+
+        Spacer(Modifier.height(32.dp))
+        Text(
+            "Version $versionName",
+            style = MaterialTheme.typography.labelSmall,
+            color = colors.onSurfaceVariant,
+        )
     }
+}
+
+// ---------- Kopfleiste & Updates ----------
+
+@Composable
+private fun TopBar(onHistoryClick: () -> Unit) {
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .padding(start = 24.dp, end = 8.dp, top = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            "🎤 Music-os",
+            style = MaterialTheme.typography.titleLarge,
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier.weight(1f),
+        )
+        TextButton(onClick = onHistoryClick) { Text("🕘 Verlauf") }
+    }
+}
+
+@Composable
+private fun UpdateBanner(state: UpdateState, onUpdate: () -> Unit, onDismiss: () -> Unit) {
+    if (state is UpdateState.None) return
+    Card(
+        Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 8.dp)
+    ) {
+        Column(Modifier.padding(16.dp)) {
+            when (state) {
+                is UpdateState.Available -> {
+                    Text("⬆️ Neue Version ${state.info.versionName}", style = MaterialTheme.typography.titleSmall)
+                    val firstLine = state.info.notes.lineSequence().firstOrNull { it.isNotBlank() }
+                    if (firstLine != null) {
+                        Text(
+                            firstLine,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        TextButton(onClick = onDismiss) { Text("Später") }
+                        Spacer(Modifier.weight(1f))
+                        Button(onClick = onUpdate) { Text("Aktualisieren") }
+                    }
+                }
+                is UpdateState.Downloading -> {
+                    Text("Update ${state.info.versionName} wird geladen …", style = MaterialTheme.typography.titleSmall)
+                    Spacer(Modifier.height(8.dp))
+                    LinearProgressIndicator(progress = { state.progress }, modifier = Modifier.fillMaxWidth())
+                }
+                UpdateState.Installing -> {
+                    Text("Wird installiert …", style = MaterialTheme.typography.titleSmall)
+                    Text(
+                        "Die App schließt sich gleich kurz – danach einfach wieder öffnen.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                is UpdateState.Message -> {
+                    Text(state.text, style = MaterialTheme.typography.bodyMedium)
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        TextButton(onClick = onDismiss) { Text("Schließen") }
+                        Spacer(Modifier.weight(1f))
+                        if (state.info != null) Button(onClick = onUpdate) { Text("Nochmal") }
+                    }
+                }
+                UpdateState.None -> Unit
+            }
+        }
+    }
+}
+
+// ---------- Verlauf ----------
+
+@Composable
+private fun HistoryScreen(
+    entries: List<HistoryEntry>,
+    onBack: () -> Unit,
+    onDelete: (String) -> Unit,
+    onClearAll: () -> Unit,
+) {
+    var confirmClear by remember { mutableStateOf(false) }
+    Column(Modifier.fillMaxSize()) {
+        Row(
+            Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 8.dp, vertical = 4.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            TextButton(onClick = onBack) { Text("← Zurück") }
+            Text(
+                "Verlauf",
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.weight(1f),
+            )
+            if (entries.isNotEmpty()) {
+                TextButton(onClick = { confirmClear = true }) { Text("Alle löschen") }
+            }
+        }
+        if (entries.isEmpty()) {
+            CenterMessage("Noch keine Songs erkannt. Erkannte Songs erscheinen hier – sie bleiben nur auf diesem Handy.")
+        } else {
+            LazyColumn(Modifier.fillMaxSize()) {
+                items(entries, key = { it.id }) { entry ->
+                    HistoryRow(entry, onDelete = { onDelete(entry.id) }, modifier = Modifier.animateItem())
+                }
+            }
+        }
+    }
+    if (confirmClear) {
+        AlertDialog(
+            onDismissRequest = { confirmClear = false },
+            title = { Text("Verlauf löschen?") },
+            text = { Text("Alle ${entries.size} Einträge werden entfernt.") },
+            confirmButton = {
+                TextButton(onClick = {
+                    confirmClear = false
+                    onClearAll()
+                }) { Text("Löschen") }
+            },
+            dismissButton = { TextButton(onClick = { confirmClear = false }) { Text("Abbrechen") } },
+        )
+    }
+}
+
+@Composable
+private fun HistoryRow(entry: HistoryEntry, onDelete: () -> Unit, modifier: Modifier = Modifier) {
+    val colors = MaterialTheme.colorScheme
+    Column(modifier) {
+        Row(
+            Modifier
+                .fillMaxWidth()
+                .padding(start = 24.dp, end = 8.dp, top = 10.dp, bottom = 10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Column(Modifier.weight(1f)) {
+                Text(
+                    entry.title,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                val subtitle = listOfNotNull(entry.artist.takeIf { it.isNotBlank() }, entry.album).joinToString(" · ")
+                if (subtitle.isNotEmpty()) {
+                    Text(
+                        subtitle,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = colors.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+                Text(
+                    (if (entry.viaMic) "🎤 Mikrofon" else "📱 Handy") + " · " + formatHistoryTime(entry.timestamp),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = colors.tertiary,
+                )
+            }
+            IconButton(onClick = onDelete) {
+                Icon(Icons.Outlined.Delete, contentDescription = "Aus Verlauf löschen", tint = colors.onSurfaceVariant)
+            }
+        }
+        HorizontalDivider(Modifier.padding(horizontal = 24.dp))
+    }
+}
+
+private val historyTimeFormat = DateTimeFormatter.ofPattern("HH:mm", Locale.GERMANY)
+private val historyDateFormat = DateTimeFormatter.ofPattern("EE, dd.MM.yyyy", Locale.GERMANY)
+
+private fun formatHistoryTime(timestamp: Long): String {
+    val dateTime = Instant.ofEpochMilli(timestamp).atZone(ZoneId.systemDefault())
+    val today = LocalDate.now()
+    val day = when (dateTime.toLocalDate()) {
+        today -> "Heute"
+        today.minusDays(1) -> "Gestern"
+        else -> historyDateFormat.format(dateTime)
+    }
+    return "$day, ${historyTimeFormat.format(dateTime)}"
 }
 
 // ---------- Mikrofon-Leiste ----------

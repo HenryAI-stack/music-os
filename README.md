@@ -5,6 +5,8 @@ Android-App, die erkennt, welcher Song gerade auf dem Handy läuft (Spotify, You
 - **Song-Erkennung (Handy):** über Androids MediaSession-API, ohne API-Key und ohne Kosten
 - **Song-Erkennung (Mikrofon):** eigener Fingerabdruck-Algorithmus + inoffizielle Shazam-Schnittstelle (wie SongRec), kostenlos; danach läuft der Text synchron zur Musik aus der Umgebung
 - **Lyrics:** [LRCLIB](https://lrclib.net) (kostenlos, zeitgestempelte LRC-Texte)
+- **Verlauf:** alle erkannten Songs lokal am Handy, einzeln per 🗑 oder komplett löschbar
+- **Updates:** die App findet neue Versionen selbst und installiert sie mit einem Tipp
 - **Anzeige:** aktuelle Zeile hervorgehoben und automatisch mitscrollend, Feinjustierung ±0,5 s
 - **Stack:** Kotlin, Jetpack Compose, Material 3, minSdk 26 (Android 8)
 
@@ -14,6 +16,8 @@ Jeder Push auf `main` baut die App automatisch und veröffentlicht sie als GitHu
 
 **Neueste Version, immer derselbe Link (gut als Lesezeichen am Handy):**
 https://github.com/HenryAI-stack/music-os/releases/latest/download/Music-os.apk
+
+**Updates:** Nach der ersten Installation musst du nichts mehr herunterladen. Music-os prüft beim Start, ob es eine neue Version gibt, und zeigt dann „Aktualisieren“. Beim allerersten In-App-Update fragt Android einmal nach der Erlaubnis „Apps installieren“ und lässt dich bestätigen. Ab Android 12 laufen die folgenden Updates meist ohne weitere Bestätigung.
 
 Alle Versionen: [Releases](https://github.com/HenryAI-stack/music-os/releases). Ein Build lässt sich auch manuell starten: **Actions → Build & Release APK → Run workflow**.
 
@@ -42,6 +46,8 @@ app/src/main/java/at/cloudplay/musicos/
 │   ├── ShazamSignature.kt       Fingerabdruck (FFT, Peaks, Binärformat)
 │   ├── ShazamClient.kt          Anfrage an Shazam, Antwort inkl. Song-Position
 │   └── Resampler.kt             44,1/48 kHz → 16 kHz
+├── history/HistoryRepository.kt Verlauf (history.json im App-Speicher)
+├── update/                      In-App-Updates über GitHub-Releases
 ├── lyrics/
 │   ├── LrcLibClient.kt          LRCLIB: exakte Abfrage → Suche → Freitext
 │   └── LrcParser.kt             LRC parsen, aktive Zeile finden

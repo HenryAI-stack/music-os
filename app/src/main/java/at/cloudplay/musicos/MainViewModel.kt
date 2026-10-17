@@ -1,14 +1,21 @@
 package at.cloudplay.musicos
 
 import android.app.Application
+import android.os.SystemClock
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import at.cloudplay.musicos.history.HistoryEntry
+import at.cloudplay.musicos.history.HistoryRepository
 import at.cloudplay.musicos.lyrics.LrcLibClient
 import at.cloudplay.musicos.lyrics.LrcParser
 import at.cloudplay.musicos.lyrics.LyricLine
 import at.cloudplay.musicos.media.NowPlaying
 import at.cloudplay.musicos.media.NowPlayingRepository
 import at.cloudplay.musicos.recognition.MicRecognizer
+import at.cloudplay.musicos.update.AppUpdater
+import at.cloudplay.musicos.update.UpdateChecker
+import at.cloudplay.musicos.update.UpdateEvents
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -20,6 +27,7 @@ import kotlinx.coroutines.flow.distinctUntilChangedBy
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 sealed interface LyricsState {
     data object Idle : LyricsState
@@ -37,6 +45,14 @@ sealed interface MicState {
     data class Message(val text: String) : MicState
 }
 
+sealed interface UpdateState {
+    data object None : UpdateState
+    data class Available(val info: UpdateChecker.UpdateInfo) : UpdateState
+    data class Downloading(val progress: Float, val info: UpdateChecker.UpdateInfo) : UpdateState
+    data object Installing : UpdateState
+    data class Message(val text: String, val info: UpdateChecker.UpdateInfo?) : UpdateState
+}
+
 /** packageName-Kennung für Songs, die über das Mikrofon erkannt wurden. */
 const val MIC_SOURCE = "mic"
 
@@ -44,6 +60,17 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
 
     private val repo = NowPlayingRepository(app)
     private val micRecognizer = MicRecognizer()
+    private val history = HistoryRepository(app, viewModelScope)
+    private val updater = AppUpdater(app)
+
+    val historyEntries: StateFlow<List<HistoryEntry>> = history.entries
+    val versionName: String = runCatching { updater.currentVersionName() }.getOrDefault("?")
+
+    private val _update = MutableStateFlow<UpdateState>(UpdateState.None)
+    val update: StateFlow<UpdateState> = _update.asStateFlow()
+    private var lastUpdateCheck = 0L
+    private var dismissedUpdate = -1
+    private var latestUpdate: UpdateChecker.UpdateInfo? = null
 
     /** Über das Mikrofon erkannter Song – hat Vorrang vor der Media-Session. */
     private val micTrack = MutableStateFlow<NowPlaying?>(null)
@@ -73,7 +100,19 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         viewModelScope.launch {
             nowPlaying
                 .distinctUntilChangedBy { it?.trackKey }
-                .collect { loadLyrics(it) }
+                .collect { track ->
+                    if (track != null) history.add(track, viaMic = track.packageName == MIC_SOURCE)
+                    loadLyrics(track)
+                }
+        }
+        viewModelScope.launch {
+            UpdateEvents.failure.collect { message ->
+                if (message != null) {
+                    val info = (_update.value as? UpdateState.Downloading)?.info
+                    _update.value = UpdateState.Message(message, info ?: latestUpdate)
+                    UpdateEvents.consume()
+                }
+            }
         }
         onResume()
     }
@@ -83,6 +122,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         val granted = repo.hasPermission()
         _hasPermission.value = granted
         if (granted) repo.start()
+        checkForUpdate()
     }
 
     fun retry() {
@@ -151,6 +191,70 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     /** Beendet den Mikrofon-Song – danach zählt wieder die Media-Session. */
     fun closeMicTrack() {
         micTrack.value = null
+    }
+
+    // ---------- Verlauf ----------
+
+    fun deleteHistoryEntry(id: String) = history.delete(id)
+
+    fun clearHistory() = history.clear()
+
+    // ---------- Updates ----------
+
+    /** Prüft höchstens alle 30 Minuten (beim Start und beim Zurückkehren in die App). */
+    fun checkForUpdate() {
+        val now = SystemClock.elapsedRealtime()
+        if (lastUpdateCheck != 0L && now - lastUpdateCheck < 30 * 60_000L) return
+        if (_update.value !is UpdateState.None) return
+        lastUpdateCheck = now
+        viewModelScope.launch {
+            val info = withContext(Dispatchers.IO) { runCatching { UpdateChecker.fetchLatest() }.getOrNull() }
+                ?: return@launch
+            latestUpdate = info
+            val current = runCatching { updater.currentVersionCode() }.getOrDefault(Long.MAX_VALUE)
+            if (info.versionCode > current && info.versionCode != dismissedUpdate && _update.value is UpdateState.None) {
+                _update.value = UpdateState.Available(info)
+            }
+        }
+    }
+
+    fun startUpdate() {
+        val info = when (val state = _update.value) {
+            is UpdateState.Available -> state.info
+            is UpdateState.Message -> state.info
+            else -> null
+        } ?: return
+        if (!updater.canInstallPackages()) {
+            runCatching { updater.openInstallPermissionSettings() }
+            _update.value = UpdateState.Message(
+                "Erlaube Music-os einmalig, Apps zu installieren („Aus dieser Quelle zulassen“), " +
+                    "und tippe dann auf „Nochmal“.",
+                info,
+            )
+            return
+        }
+        _update.value = UpdateState.Downloading(0f, info)
+        viewModelScope.launch {
+            try {
+                updater.downloadAndInstall(info) { progress ->
+                    if (_update.value is UpdateState.Downloading) _update.value = UpdateState.Downloading(progress, info)
+                }
+                if (_update.value is UpdateState.Downloading) _update.value = UpdateState.Installing
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                _update.value = UpdateState.Message("Update fehlgeschlagen: ${e.message ?: "unbekannter Fehler"}", info)
+            }
+        }
+    }
+
+    fun dismissUpdate() {
+        when (val state = _update.value) {
+            is UpdateState.Available -> dismissedUpdate = state.info.versionCode
+            is UpdateState.Message -> state.info?.let { dismissedUpdate = it.versionCode }
+            else -> Unit
+        }
+        _update.value = UpdateState.None
     }
 
     // ---------- Lyrics ----------
