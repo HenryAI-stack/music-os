@@ -14,8 +14,10 @@ android {
         applicationId = "at.cloudplay.singalong"
         minSdk = 26
         targetSdk = 35
-        versionCode = 1
-        versionName = "0.1.0"
+        // In GitHub Actions zählt die Build-Nummer mit (1, 2, 3 …), lokal bleibt es 1.
+        val buildNumber = System.getenv("GITHUB_RUN_NUMBER")?.toIntOrNull() ?: 1
+        versionCode = buildNumber
+        versionName = "0.1.$buildNumber"
     }
 
     // Fester Debug-Schlüssel im Repo: so lassen sich neue Builds (auch aus

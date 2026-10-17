@@ -1,9 +1,16 @@
-name: Build APK
+name: Build & Release APK
 
 on:
   push:
     branches: [main]
   workflow_dispatch:
+
+permissions:
+  contents: write # nötig, um Releases anzulegen
+
+concurrency:
+  group: release
+  cancel-in-progress: false
 
 jobs:
   build:
@@ -18,10 +25,25 @@ jobs:
 
       - uses: gradle/actions/setup-gradle@v4
 
-      - name: Build debug APK
+      - name: Build APK
         run: chmod +x gradlew && ./gradlew assembleDebug --stacktrace
+
+      - name: APK umbenennen
+        run: cp app/build/outputs/apk/debug/app-debug.apk SingAlong.apk
 
       - uses: actions/upload-artifact@v4
         with:
           name: SingAlong-apk
-          path: app/build/outputs/apk/debug/*.apk
+          path: SingAlong.apk
+
+      - name: GitHub Release erstellen
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          VERSION="0.1.${{ github.run_number }}"
+          NOTES="$(git log -1 --pretty=%B | grep -v -e '^Co-Authored-By:' -e '^Claude-Session:')"
+          gh release create "v$VERSION" SingAlong.apk \
+            --target "$GITHUB_SHA" \
+            --title "SingAlong $VERSION" \
+            --notes "$NOTES" \
+            --latest

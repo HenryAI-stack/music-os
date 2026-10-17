@@ -7,14 +7,16 @@ Android-App, die erkennt, welcher Song gerade auf dem Handy läuft (Spotify, You
 - **Anzeige:** aktuelle Zeile hervorgehoben und automatisch mitscrollend, Feinjustierung ±0,5 s
 - **Stack:** Kotlin, Jetpack Compose, Material 3, minSdk 26 (Android 8)
 
-## APK bauen
+## APK herunterladen
 
-### Variante 1: GitHub Actions (ohne lokale Installation)
-1. Neues Repo anlegen, z. B. `HenryAI-stack/singalong`, und den Inhalt dieses Ordners hochladen (inkl. `.github/` und `app/debug.keystore`).
-2. Bei jedem Push auf `main` baut der Workflow automatisch. Alternativ unter **Actions → Build APK → Run workflow** manuell starten.
-3. Nach ca. 3–5 Minuten liegt die APK unter dem Lauf bei **Artifacts → SingAlong-apk** (als ZIP).
+Jeder Push auf `main` baut die App automatisch und veröffentlicht sie als GitHub-Release (`v0.1.<Build-Nummer>`).
 
-### Variante 2: Android Studio
+**Neueste Version, immer derselbe Link (gut als Lesezeichen am Handy):**
+https://github.com/HenryAI-stack/music-os/releases/latest/download/SingAlong.apk
+
+Alle Versionen: [Releases](https://github.com/HenryAI-stack/music-os/releases). Ein Build lässt sich auch manuell starten: **Actions → Build & Release APK → Run workflow**.
+
+### Lokal bauen (Android Studio)
 Ordner öffnen, Gradle-Sync abwarten, ▶ Run.
 
 ## Installieren & einrichten
