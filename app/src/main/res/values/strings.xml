@@ -1,4 +1,87 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- English (default). German translation: values-de/strings.xml -->
 <resources>
-    <string name="app_name">Music-os</string>
+    <string name="app_name" translatable="false">Music-os</string>
+    <string name="app_title" translatable="false">🎤 Music-os</string>
+
+    <!-- Top bar & navigation -->
+    <string name="cd_history">History</string>
+    <string name="cd_settings">Settings</string>
+    <string name="cd_back">Back</string>
+
+    <!-- Home -->
+    <string name="mic_button">🎤  Identify song via microphone</string>
+    <string name="mic_hint">Point your phone at the music – within 4 to 12 seconds the song is identified and the lyrics play along.</string>
+    <string name="phone_music_title">Music on this phone</string>
+    <string name="phone_music_ready">Start a song in Spotify, YouTube Music or another music app – it will show up here automatically.</string>
+    <string name="phone_music_permission">To detect what is playing on this phone, Music-os needs notification access. It only reads the playback info of your music apps (title, artist, album, position).</string>
+    <string name="grant_access">Allow access</string>
+    <string name="restricted_hint">Switch greyed out? For sideloaded apps (Android 13+), open App info first, tap ⋮ in the top right and choose “Allow restricted settings”.</string>
+    <string name="open_app_info">Open app info</string>
+    <string name="version_label">Version %1$s</string>
+
+    <!-- Microphone -->
+    <string name="listening">🎧 Listening …</string>
+    <string name="identify_short">🎤 Identify via microphone</string>
+    <string name="identify_again">🎤 Identify again</string>
+    <string name="via_mic">🎤 Identified via microphone</string>
+    <string name="mic_no_match">No song recognized. Move closer to the music and try again.</string>
+    <string name="mic_permission_denied">I can\'t listen without microphone permission.</string>
+    <string name="mic_unavailable">Couldn\'t open the microphone.</string>
+    <string name="mic_recording_failed">Recording error.</string>
+    <string name="mic_rate_limited">Too many requests to Shazam – please wait a moment.</string>
+    <string name="mic_network">Couldn\'t reach Shazam.</string>
+    <string name="mic_bad_response">Unexpected response from Shazam.</string>
+
+    <!-- Lyrics -->
+    <string name="lyrics_instrumental">Instrumental – just hum along today 🎶</string>
+    <string name="lyrics_not_found">No lyrics found for this song.</string>
+    <string name="lyrics_search_again">Search again</string>
+    <string name="lyrics_error">Couldn\'t load lyrics: %1$s</string>
+    <string name="lyrics_plain_hint">Only lyrics without timestamps found – they won\'t scroll automatically.</string>
+    <string name="sync_later">Lyrics later</string>
+    <string name="sync_earlier">Lyrics earlier</string>
+
+    <!-- Updates -->
+    <string name="update_available">⬆️ New version %1$s</string>
+    <string name="update_later">Later</string>
+    <string name="update_now">Update</string>
+    <string name="update_downloading">Downloading update %1$s …</string>
+    <string name="update_installing">Installing …</string>
+    <string name="update_installing_hint">The app will close briefly – just open it again afterwards.</string>
+    <string name="update_need_permission">Allow Music-os to install apps once (“Allow from this source”), then tap “Try again”.</string>
+    <string name="update_download_failed">Update failed.</string>
+    <string name="update_aborted">Update cancelled.</string>
+    <string name="update_install_failed">Installation failed.</string>
+    <string name="update_up_to_date">You\'re on the latest version.</string>
+    <string name="update_check_failed">Couldn\'t check for updates.</string>
+    <string name="check_for_updates">Check for updates</string>
+
+    <!-- History -->
+    <string name="history_title">History</string>
+    <string name="history_clear_all">Delete all</string>
+    <string name="history_empty">No songs identified yet. Identified songs appear here – they stay on this phone only.</string>
+    <string name="history_clear_title">Clear history?</string>
+    <string name="history_clear_text">All entries (%1$d) will be removed.</string>
+    <string name="history_delete_entry">Remove from history</string>
+    <string name="source_mic">🎤 Microphone</string>
+    <string name="source_phone">📱 Phone</string>
+    <string name="today">Today</string>
+    <string name="yesterday">Yesterday</string>
+    <string name="history_date_pattern">EEE, MMM d, yyyy</string>
+
+    <!-- Settings -->
+    <string name="settings_title">Settings</string>
+    <string name="settings_language">Language</string>
+    <string name="language_system">System default</string>
+    <string name="language_german" translatable="false">Deutsch</string>
+    <string name="language_english" translatable="false">English</string>
+    <string name="settings_about">About</string>
+
+    <!-- Common -->
+    <string name="ok">OK</string>
+    <string name="cancel">Cancel</string>
+    <string name="close">Close</string>
+    <string name="delete">Delete</string>
+    <string name="try_again">Try again</string>
 </resources>

@@ -25,7 +25,7 @@ object UpdateChecker {
             conn.readTimeout = 15_000
             conn.setRequestProperty("Accept", "application/vnd.github+json")
             conn.setRequestProperty("User-Agent", "Music-os-Updater")
-            if (conn.responseCode != 200) throw IOException("GitHub antwortet mit HTTP ${conn.responseCode}")
+            if (conn.responseCode != 200) throw IOException("GitHub HTTP ${conn.responseCode}")
             val body = conn.inputStream.bufferedReader().use { it.readText() }
             return parse(JSONObject(body))
         } finally {

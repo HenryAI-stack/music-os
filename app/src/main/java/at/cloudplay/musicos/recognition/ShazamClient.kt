@@ -12,6 +12,9 @@ import java.util.UUID
  * dieselbe, die auch SongRec und shazamio nutzen. Es wird keine Audiodatei übertragen,
  * nur der Fingerabdruck. Kann sich jederzeit ändern, da nicht offiziell dokumentiert.
  */
+/** Fehlerarten bei der Erkennung – die UI übersetzt sie in Texte. */
+enum class RecognitionError { MIC_UNAVAILABLE, RECORDING_FAILED, RATE_LIMITED, NETWORK, BAD_RESPONSE }
+
 object ShazamClient {
 
     data class Match(
@@ -26,7 +29,7 @@ object ShazamClient {
     sealed interface Outcome {
         data class Found(val match: Match) : Outcome
         data object NoMatch : Outcome
-        data class Failed(val message: String) : Outcome
+        data class Failed(val error: RecognitionError, val detail: String? = null) : Outcome
     }
 
     private const val USER_AGENT = "Dalvik/2.1.0 (Linux; U; Android 14; Pixel 7 Build/UQ1A.240205.004)"
@@ -34,13 +37,16 @@ object ShazamClient {
     fun recognize(signature: ShazamSignature.Signature): Outcome {
         if (signature.peakCount == 0) return Outcome.NoMatch // Stille – Anfrage sparen
         return try {
-            val body = requestBody(signature).toString()
-            val response = post(endpoint(), body)
-            parse(JSONObject(response))
+            val (code, response) = post(endpoint(), requestBody(signature).toString())
+            when {
+                code == 429 -> Outcome.Failed(RecognitionError.RATE_LIMITED)
+                code !in 200..299 || response == null -> Outcome.Failed(RecognitionError.NETWORK, "HTTP $code")
+                else -> parse(JSONObject(response))
+            }
         } catch (e: IOException) {
-            Outcome.Failed(e.message ?: "Keine Verbindung zu Shazam")
+            Outcome.Failed(RecognitionError.NETWORK, e.message)
         } catch (e: org.json.JSONException) {
-            Outcome.Failed("Unerwartete Antwort von Shazam")
+            Outcome.Failed(RecognitionError.BAD_RESPONSE)
         }
     }
 
@@ -102,7 +108,8 @@ object ShazamClient {
         return null
     }
 
-    private fun post(url: String, body: String): String {
+    /** Liefert HTTP-Status und (bei Erfolg) den Antworttext. */
+    private fun post(url: String, body: String): Pair<Int, String?> {
         val conn = URL(url).openConnection() as HttpURLConnection
         try {
             conn.requestMethod = "POST"
@@ -115,9 +122,8 @@ object ShazamClient {
             conn.setRequestProperty("User-Agent", USER_AGENT)
             conn.outputStream.use { it.write(body.toByteArray(Charsets.UTF_8)) }
             val code = conn.responseCode
-            if (code == 429) throw IOException("Zu viele Anfragen an Shazam – bitte kurz warten")
-            if (code !in 200..299) throw IOException("Shazam antwortet mit HTTP $code")
-            return conn.inputStream.bufferedReader().use { it.readText() }
+            val text = if (code in 200..299) conn.inputStream.bufferedReader().use { it.readText() } else null
+            return code to text
         } finally {
             conn.disconnect()
         }

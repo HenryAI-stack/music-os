@@ -29,20 +29,20 @@ class MicRecognizer {
         ) : Result
 
         data object NoMatch : Result
-        data class Failed(val message: String) : Result
+        data class Failed(val error: RecognitionError, val detail: String? = null) : Result
     }
 
     @SuppressLint("MissingPermission") // Berechtigung wird in der UI geprüft
     suspend fun listen(onProgress: (Float) -> Unit): Result = withContext(Dispatchers.IO) {
         val (recorder, rate) = openRecorder()
-            ?: return@withContext Result.Failed("Mikrofon konnte nicht geöffnet werden")
+            ?: return@withContext Result.Failed(RecognitionError.MIC_UNAVAILABLE)
 
         val maxSamples = rate * MAX_SECONDS
         val buffer = ShortArray(maxSamples)
         val chunk = ShortArray(rate / 10)
         val attemptsAt = ATTEMPT_SECONDS.map { it * rate }
         val found = AtomicReference<ShazamClient.Match?>(null)
-        val lastFailure = AtomicReference<String?>(null)
+        val lastFailure = AtomicReference<ShazamClient.Outcome.Failed?>(null)
         var count = 0
         var nextAttempt = 0
         var startedAt = 0L
@@ -56,7 +56,7 @@ class MicRecognizer {
                     ensureActive()
                     val read = recorder.read(chunk, 0, minOf(chunk.size, maxSamples - count))
                     if (read < 0) {
-                        lastFailure.set("Aufnahmefehler ($read)")
+                        lastFailure.set(ShazamClient.Outcome.Failed(RecognitionError.RECORDING_FAILED, "code $read"))
                         break
                     }
                     System.arraycopy(chunk, 0, buffer, count, read)
@@ -70,7 +70,7 @@ class MicRecognizer {
                             val signature = ShazamSignature.generate(Resampler.to16k(snapshot, rate))
                             when (val outcome = ShazamClient.recognize(signature)) {
                                 is ShazamClient.Outcome.Found -> found.compareAndSet(null, outcome.match)
-                                is ShazamClient.Outcome.Failed -> lastFailure.set(outcome.message)
+                                is ShazamClient.Outcome.Failed -> lastFailure.set(outcome)
                                 ShazamClient.Outcome.NoMatch -> Unit
                             }
                         }
@@ -87,7 +87,7 @@ class MicRecognizer {
         val failure = lastFailure.get()
         when {
             match != null -> Result.Found(match, startedAt)
-            failure != null -> Result.Failed(failure)
+            failure != null -> Result.Failed(failure.error, failure.detail)
             else -> Result.NoMatch
         }
     }

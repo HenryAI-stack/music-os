@@ -1,11 +1,16 @@
 # CLAUDE.md – Music-os
 
-Android-App (Kotlin, Jetpack Compose), die den gerade laufenden Song auf dem Handy erkennt und die Lyrics karaoke-synchron anzeigt. Privates Hobbyprojekt von Max; Antworten und UI-Texte auf **Deutsch**.
+Android-App (Kotlin, Jetpack Compose), die den gerade laufenden Song auf dem Handy erkennt und die Lyrics karaoke-synchron anzeigt. Privates Hobbyprojekt von Max; Antworten auf **Deutsch**. Die App ist **zweisprachig (Englisch/Deutsch)**.
 
 ## Grundprinzipien
 - **Keine laufenden Kosten:** keine kostenpflichtigen APIs, keine API-Keys. Neue Dienste nur, wenn sie kostenlos und ohne Key nutzbar sind.
 - **Keine zusätzlichen Libraries ohne Grund:** HTTP läuft über `HttpURLConnection` + `org.json` (beides im Android-SDK). Retrofit/OkHttp/Ktor nur, wenn es echten Nutzen bringt.
 - **Nur private Nutzung:** Lyrics kommen von LRCLIB; eine Play-Store-Veröffentlichung wäre lizenzpflichtig.
+
+## Sprachen
+- Alle UI-Texte stehen in `res/values/strings.xml` (Englisch, Standard) und `res/values-de/strings.xml` (Deutsch). Neue Texte **immer in beiden Dateien** anlegen – keine festen Strings im Kotlin-Code.
+- ViewModel/Logik liefern nur typisierte Meldungen (`MicMessage`, `UpdateMessage`, `RecognitionError`); übersetzt wird in der UI.
+- Sprachwahl: `LanguageSettings` (SharedPreferences, angewendet in `MainActivity.attachBaseContext`, Wechsel per `recreate()`); Einstellungen über das Zahnrad oben rechts. `res/xml/locales_config.xml` aktiviert zusätzlich die System-Spracheinstellung pro App (Android 13+).
 
 ## Architektur
 | Datei | Aufgabe |

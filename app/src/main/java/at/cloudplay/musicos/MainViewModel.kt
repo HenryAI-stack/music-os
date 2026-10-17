@@ -12,6 +12,7 @@ import at.cloudplay.musicos.lyrics.LyricLine
 import at.cloudplay.musicos.media.NowPlaying
 import at.cloudplay.musicos.media.NowPlayingRepository
 import at.cloudplay.musicos.recognition.MicRecognizer
+import at.cloudplay.musicos.recognition.RecognitionError
 import at.cloudplay.musicos.update.AppUpdater
 import at.cloudplay.musicos.update.UpdateChecker
 import at.cloudplay.musicos.update.UpdateEvents
@@ -39,10 +40,13 @@ sealed interface LyricsState {
     data class Error(val message: String) : LyricsState
 }
 
+/** Meldungen rund ums Mikrofon – die UI übersetzt sie (strings.xml). */
+enum class MicMessage { NO_MATCH, PERMISSION_DENIED, MIC_UNAVAILABLE, RECORDING_FAILED, RATE_LIMITED, NETWORK, BAD_RESPONSE }
+
 sealed interface MicState {
     data object Idle : MicState
     data class Listening(val progress: Float) : MicState
-    data class Message(val text: String) : MicState
+    data class Message(val kind: MicMessage, val detail: String? = null) : MicState
 }
 
 sealed interface UpdateState {
@@ -50,8 +54,15 @@ sealed interface UpdateState {
     data class Available(val info: UpdateChecker.UpdateInfo) : UpdateState
     data class Downloading(val progress: Float, val info: UpdateChecker.UpdateInfo) : UpdateState
     data object Installing : UpdateState
-    data class Message(val text: String, val info: UpdateChecker.UpdateInfo?) : UpdateState
+    data class Message(
+        val kind: UpdateMessage,
+        val detail: String?,
+        val info: UpdateChecker.UpdateInfo?,
+    ) : UpdateState
 }
+
+/** Meldungen rund um Updates – die UI übersetzt sie (strings.xml). */
+enum class UpdateMessage { NEED_INSTALL_PERMISSION, DOWNLOAD_FAILED, INSTALL_ABORTED, INSTALL_FAILED, UP_TO_DATE, CHECK_FAILED }
 
 /** packageName-Kennung für Songs, die über das Mikrofon erkannt wurden. */
 const val MIC_SOURCE = "mic"
@@ -106,10 +117,11 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
                 }
         }
         viewModelScope.launch {
-            UpdateEvents.failure.collect { message ->
-                if (message != null) {
-                    val info = (_update.value as? UpdateState.Downloading)?.info
-                    _update.value = UpdateState.Message(message, info ?: latestUpdate)
+            UpdateEvents.failure.collect { failure ->
+                if (failure != null) {
+                    val info = (_update.value as? UpdateState.Downloading)?.info ?: latestUpdate
+                    val kind = if (failure.aborted) UpdateMessage.INSTALL_ABORTED else UpdateMessage.INSTALL_FAILED
+                    _update.value = UpdateState.Message(kind, failure.detail, info)
                     UpdateEvents.consume()
                 }
             }
@@ -148,7 +160,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
-                MicRecognizer.Result.Failed(e.message ?: "Mikrofon nicht verfügbar")
+                MicRecognizer.Result.Failed(RecognitionError.MIC_UNAVAILABLE, e.message)
             }
             when (result) {
                 is MicRecognizer.Result.Found -> {
@@ -167,10 +179,11 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
                     _offsetMs.value = 0L
                     _micState.value = MicState.Idle
                 }
-                MicRecognizer.Result.NoMatch -> _micState.value = MicState.Message(
-                    "Kein Song erkannt. Geh näher an die Musik heran und versuch es nochmal."
+                MicRecognizer.Result.NoMatch -> _micState.value = MicState.Message(MicMessage.NO_MATCH)
+                is MicRecognizer.Result.Failed -> _micState.value = MicState.Message(
+                    MicMessage.valueOf(result.error.name),
+                    result.detail,
                 )
-                is MicRecognizer.Result.Failed -> _micState.value = MicState.Message(result.message)
             }
         }
     }
@@ -181,7 +194,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun onMicPermissionDenied() {
-        _micState.value = MicState.Message("Ohne Mikrofon-Berechtigung kann ich nicht mithören.")
+        _micState.value = MicState.Message(MicMessage.PERMISSION_DENIED)
     }
 
     fun dismissMicMessage() {
@@ -201,19 +214,28 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
 
     // ---------- Updates ----------
 
-    /** Prüft höchstens alle 30 Minuten (beim Start und beim Zurückkehren in die App). */
-    fun checkForUpdate() {
+    /**
+     * Automatisch höchstens alle 30 Minuten (Start / Zurückkehren in die App).
+     * [manual] = Knopf in den Einstellungen: sofort prüfen und Ergebnis immer anzeigen.
+     */
+    fun checkForUpdate(manual: Boolean = false) {
         val now = SystemClock.elapsedRealtime()
-        if (lastUpdateCheck != 0L && now - lastUpdateCheck < 30 * 60_000L) return
-        if (_update.value !is UpdateState.None) return
+        if (!manual && lastUpdateCheck != 0L && now - lastUpdateCheck < 30 * 60_000L) return
+        if (_update.value is UpdateState.Downloading || _update.value is UpdateState.Installing) return
+        if (!manual && _update.value !is UpdateState.None) return
         lastUpdateCheck = now
         viewModelScope.launch {
             val info = withContext(Dispatchers.IO) { runCatching { UpdateChecker.fetchLatest() }.getOrNull() }
-                ?: return@launch
+            if (info == null) {
+                if (manual) _update.value = UpdateState.Message(UpdateMessage.CHECK_FAILED, null, null)
+                return@launch
+            }
             latestUpdate = info
             val current = runCatching { updater.currentVersionCode() }.getOrDefault(Long.MAX_VALUE)
-            if (info.versionCode > current && info.versionCode != dismissedUpdate && _update.value is UpdateState.None) {
-                _update.value = UpdateState.Available(info)
+            val newer = info.versionCode > current
+            when {
+                newer && (manual || info.versionCode != dismissedUpdate) -> _update.value = UpdateState.Available(info)
+                manual -> _update.value = UpdateState.Message(UpdateMessage.UP_TO_DATE, null, null)
             }
         }
     }
@@ -226,11 +248,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         } ?: return
         if (!updater.canInstallPackages()) {
             runCatching { updater.openInstallPermissionSettings() }
-            _update.value = UpdateState.Message(
-                "Erlaube Music-os einmalig, Apps zu installieren („Aus dieser Quelle zulassen“), " +
-                    "und tippe dann auf „Nochmal“.",
-                info,
-            )
+            _update.value = UpdateState.Message(UpdateMessage.NEED_INSTALL_PERMISSION, null, info)
             return
         }
         _update.value = UpdateState.Downloading(0f, info)
@@ -243,7 +261,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
-                _update.value = UpdateState.Message("Update fehlgeschlagen: ${e.message ?: "unbekannter Fehler"}", info)
+                _update.value = UpdateState.Message(UpdateMessage.DOWNLOAD_FAILED, e.message, info)
             }
         }
     }
@@ -279,7 +297,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
-                LyricsState.Error(e.message ?: "Keine Verbindung")
+                LyricsState.Error(e.message ?: e.javaClass.simpleName)
             }
             if (state !is LyricsState.Error) cache[track.trackKey] = state
             _lyrics.value = state

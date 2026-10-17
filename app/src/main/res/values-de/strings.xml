@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Kopfleiste & Navigation -->
+    <string name="cd_history">Verlauf</string>
+    <string name="cd_settings">Einstellungen</string>
+    <string name="cd_back">Zurück</string>
+
+    <!-- Startbildschirm -->
+    <string name="mic_button">🎤  Song über Mikrofon erkennen</string>
+    <string name="mic_hint">Halte das Handy Richtung Musik – nach 4 bis 12 Sekunden steht der Song fest, und der Text läuft synchron mit.</string>
+    <string name="phone_music_title">Musik auf diesem Handy</string>
+    <string name="phone_music_ready">Starte einen Song in Spotify, YouTube Music oder einer anderen Musik-App – er erscheint hier automatisch.</string>
+    <string name="phone_music_permission">Damit Music-os automatisch erkennt, was auf dem Handy läuft, braucht es den Benachrichtigungszugriff. Gelesen werden nur die Wiedergabe-Infos deiner Musik-Apps (Titel, Interpret, Album, Position).</string>
+    <string name="grant_access">Zugriff erlauben</string>
+    <string name="restricted_hint">Schalter ausgegraut? Bei selbst installierten APKs (ab Android 13) zuerst die App-Infos öffnen, oben rechts auf ⋮ tippen und „Eingeschränkte Einstellungen zulassen“ wählen.</string>
+    <string name="open_app_info">App-Infos öffnen</string>
+    <string name="version_label">Version %1$s</string>
+
+    <!-- Mikrofon -->
+    <string name="listening">🎧 Hört zu …</string>
+    <string name="identify_short">🎤 Über Mikrofon erkennen</string>
+    <string name="identify_again">🎤 Neu erkennen</string>
+    <string name="via_mic">🎤 Über Mikrofon erkannt</string>
+    <string name="mic_no_match">Kein Song erkannt. Geh näher an die Musik heran und versuch es nochmal.</string>
+    <string name="mic_permission_denied">Ohne Mikrofon-Berechtigung kann ich nicht mithören.</string>
+    <string name="mic_unavailable">Mikrofon konnte nicht geöffnet werden.</string>
+    <string name="mic_recording_failed">Aufnahmefehler.</string>
+    <string name="mic_rate_limited">Zu viele Anfragen an Shazam – bitte kurz warten.</string>
+    <string name="mic_network">Keine Verbindung zu Shazam.</string>
+    <string name="mic_bad_response">Unerwartete Antwort von Shazam.</string>
+
+    <!-- Lyrics -->
+    <string name="lyrics_instrumental">Instrumental – heute nur mitsummen 🎶</string>
+    <string name="lyrics_not_found">Für diesen Song wurde kein Text gefunden.</string>
+    <string name="lyrics_search_again">Nochmal suchen</string>
+    <string name="lyrics_error">Fehler beim Laden: %1$s</string>
+    <string name="lyrics_plain_hint">Nur Text ohne Zeitstempel gefunden – er läuft nicht automatisch mit.</string>
+    <string name="sync_later">Text später</string>
+    <string name="sync_earlier">Text früher</string>
+
+    <!-- Updates -->
+    <string name="update_available">⬆️ Neue Version %1$s</string>
+    <string name="update_later">Später</string>
+    <string name="update_now">Aktualisieren</string>
+    <string name="update_downloading">Update %1$s wird geladen …</string>
+    <string name="update_installing">Wird installiert …</string>
+    <string name="update_installing_hint">Die App schließt sich gleich kurz – danach einfach wieder öffnen.</string>
+    <string name="update_need_permission">Erlaube Music-os einmalig, Apps zu installieren („Aus dieser Quelle zulassen“), und tippe dann auf „Nochmal“.</string>
+    <string name="update_download_failed">Update fehlgeschlagen.</string>
+    <string name="update_aborted">Update abgebrochen.</string>
+    <string name="update_install_failed">Installation fehlgeschlagen.</string>
+    <string name="update_up_to_date">Du hast die neueste Version.</string>
+    <string name="update_check_failed">Konnte nicht nach Updates suchen.</string>
+    <string name="check_for_updates">Nach Updates suchen</string>
+
+    <!-- Verlauf -->
+    <string name="history_title">Verlauf</string>
+    <string name="history_clear_all">Alle löschen</string>
+    <string name="history_empty">Noch keine Songs erkannt. Erkannte Songs erscheinen hier – sie bleiben nur auf diesem Handy.</string>
+    <string name="history_clear_title">Verlauf löschen?</string>
+    <string name="history_clear_text">Alle Einträge (%1$d) werden entfernt.</string>
+    <string name="history_delete_entry">Aus Verlauf löschen</string>
+    <string name="source_mic">🎤 Mikrofon</string>
+    <string name="source_phone">📱 Handy</string>
+    <string name="today">Heute</string>
+    <string name="yesterday">Gestern</string>
+    <string name="history_date_pattern">EE, dd.MM.yyyy</string>
+
+    <!-- Einstellungen -->
+    <string name="settings_title">Einstellungen</string>
+    <string name="settings_language">Sprache</string>
+    <string name="language_system">Systemsprache</string>
+    <string name="settings_about">Über die App</string>
+
+    <!-- Allgemein -->
+    <string name="ok">OK</string>
+    <string name="cancel">Abbrechen</string>
+    <string name="close">Schließen</string>
+    <string name="delete">Löschen</string>
+    <string name="try_again">Nochmal</string>
+</resources>

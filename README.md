@@ -8,6 +8,7 @@ Android-App, die erkennt, welcher Song gerade auf dem Handy läuft (Spotify, You
 - **Verlauf:** alle erkannten Songs lokal am Handy, einzeln per 🗑 oder komplett löschbar
 - **Updates:** die App findet neue Versionen selbst und installiert sie mit einem Tipp
 - **Anzeige:** aktuelle Zeile hervorgehoben und automatisch mitscrollend, Feinjustierung ±0,5 s
+- **Sprachen:** Englisch und Deutsch, umschaltbar über das ⚙️ Zahnrad oben rechts (Standard: Systemsprache)
 - **Stack:** Kotlin, Jetpack Compose, Material 3, minSdk 26 (Android 8)
 
 ## APK herunterladen

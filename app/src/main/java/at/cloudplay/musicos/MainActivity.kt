@@ -1,5 +1,6 @@
 package at.cloudplay.musicos
 
+import android.content.Context
 import android.graphics.Color
 import android.os.Bundle
 import android.view.WindowManager
@@ -14,6 +15,10 @@ import at.cloudplay.musicos.ui.MusicOsTheme
 class MainActivity : ComponentActivity() {
 
     private val viewModel: MainViewModel by viewModels()
+
+    override fun attachBaseContext(newBase: Context) {
+        super.attachBaseContext(LanguageSettings.wrap(newBase))
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)

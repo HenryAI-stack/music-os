@@ -23,10 +23,10 @@ class UpdateReceiver : BroadcastReceiver() {
                 }
             }
             PackageInstaller.STATUS_SUCCESS -> Unit // App wird ersetzt und neu gestartet
-            PackageInstaller.STATUS_FAILURE_ABORTED -> UpdateEvents.report("Update abgebrochen.")
+            PackageInstaller.STATUS_FAILURE_ABORTED -> UpdateEvents.report(UpdateEvents.Failure(aborted = true, detail = null))
             else -> {
                 val detail = intent.getStringExtra(PackageInstaller.EXTRA_STATUS_MESSAGE)
-                UpdateEvents.report("Installation fehlgeschlagen (Status $status${detail?.let { ": $it" } ?: ""})")
+                UpdateEvents.report(UpdateEvents.Failure(aborted = false, detail = "Status $status${detail?.let { ": $it" } ?: ""}"))
             }
         }
     }
@@ -38,11 +38,13 @@ class UpdateReceiver : BroadcastReceiver() {
 
 /** Kleine Brücke vom Receiver zum ViewModel. */
 object UpdateEvents {
-    private val _failure = MutableStateFlow<String?>(null)
-    val failure: StateFlow<String?> = _failure.asStateFlow()
+    data class Failure(val aborted: Boolean, val detail: String?)
 
-    fun report(message: String) {
-        _failure.value = message
+    private val _failure = MutableStateFlow<Failure?>(null)
+    val failure: StateFlow<Failure?> = _failure.asStateFlow()
+
+    fun report(failure: Failure) {
+        _failure.value = failure
     }
 
     fun consume() {

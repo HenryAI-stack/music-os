@@ -58,7 +58,7 @@ class AppUpdater(context: Context) {
                     conn.connectTimeout = 15_000
                     conn.readTimeout = 30_000
                     conn.setRequestProperty("User-Agent", "Music-os-Updater")
-                    if (conn.responseCode != 200) throw IOException("Download fehlgeschlagen (HTTP ${conn.responseCode})")
+                    if (conn.responseCode != 200) throw IOException("HTTP ${conn.responseCode}")
                     val total = conn.contentLengthLong
                     session.openWrite("music-os.apk", 0, if (total > 0) total else -1).use { out ->
                         conn.inputStream.use { input ->

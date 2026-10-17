@@ -100,7 +100,7 @@ object LrcLibClient {
             when (val code = conn.responseCode) {
                 in 200..299 -> conn.inputStream.bufferedReader().use { it.readText() }
                 in 400..499 -> null
-                else -> throw IOException("LRCLIB antwortet mit HTTP $code")
+                else -> throw IOException("LRCLIB HTTP $code")
             }
         } finally {
             conn.disconnect()
