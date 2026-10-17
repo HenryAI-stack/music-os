@@ -11,6 +11,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.StringRes
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -34,6 +35,7 @@ import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.AlertDialog
@@ -84,6 +86,7 @@ import at.cloudplay.musicos.R
 import at.cloudplay.musicos.UpdateMessage
 import at.cloudplay.musicos.UpdateState
 import at.cloudplay.musicos.history.HistoryEntry
+import at.cloudplay.musicos.history.YouTubeLauncher
 import at.cloudplay.musicos.lyrics.LrcParser
 import at.cloudplay.musicos.lyrics.LyricLine
 import at.cloudplay.musicos.media.NowPlaying
@@ -537,10 +540,15 @@ private fun HistoryScreen(
 @Composable
 private fun HistoryRow(entry: HistoryEntry, onDelete: () -> Unit, modifier: Modifier = Modifier) {
     val colors = MaterialTheme.colorScheme
+    val context = LocalContext.current
+    val openLabel = stringResource(R.string.history_open_youtube)
     Column(modifier) {
         Row(
             Modifier
                 .fillMaxWidth()
+                .clickable(onClickLabel = openLabel) {
+                    YouTubeLauncher.open(context, entry.title, entry.artist)
+                }
                 .padding(start = 24.dp, end = 8.dp, top = 10.dp, bottom = 10.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
@@ -569,6 +577,11 @@ private fun HistoryRow(entry: HistoryEntry, onDelete: () -> Unit, modifier: Modi
                     color = colors.tertiary,
                 )
             }
+            Icon(
+                Icons.Filled.PlayArrow,
+                contentDescription = null, // ganze Zeile ist klickbar, Label siehe onClickLabel
+                tint = colors.primary,
+            )
             IconButton(onClick = onDelete) {
                 Icon(
                     Icons.Outlined.Delete,

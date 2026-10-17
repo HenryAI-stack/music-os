@@ -64,6 +64,7 @@
     <string name="history_clear_title">Clear history?</string>
     <string name="history_clear_text">All entries (%1$d) will be removed.</string>
     <string name="history_delete_entry">Remove from history</string>
+    <string name="history_open_youtube">Open on YouTube</string>
     <string name="source_mic">🎤 Microphone</string>
     <string name="source_phone">📱 Phone</string>
     <string name="today">Today</string>

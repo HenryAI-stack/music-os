@@ -60,6 +60,7 @@
     <string name="history_clear_title">Verlauf löschen?</string>
     <string name="history_clear_text">Alle Einträge (%1$d) werden entfernt.</string>
     <string name="history_delete_entry">Aus Verlauf löschen</string>
+    <string name="history_open_youtube">Auf YouTube öffnen</string>
     <string name="source_mic">🎤 Mikrofon</string>
     <string name="source_phone">📱 Handy</string>
     <string name="today">Heute</string>

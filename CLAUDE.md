@@ -23,7 +23,7 @@ Android-App (Kotlin, Jetpack Compose), die den gerade laufenden Song auf dem Han
 | `recognition/ShazamSignature.kt` | Fingerabdruck-Generator, 1:1-Port von shazamio `algorithm.py`/`signature.py` (16 kHz, max. 12 s). Reines Kotlin → JVM-testbar |
 | `recognition/ShazamClient.kt` | POST an `amp.shazam.com/discovery/v5/.../tag/{uuid}/{uuid}` (inoffiziell, kostenlos). `matches[0].offset` = Songposition beim Aufnahmestart → Karaoke-Sync |
 | `recognition/MicRecognizer.kt` | AudioRecord (16 kHz, Fallback 48/44,1 kHz + `Resampler`), Erkennungsversuche nach 4/8/12 s parallel zur Aufnahme |
-| `history/HistoryRepository.kt` | Verlauf als `history.json` in `filesDir` (max. 300, gleicher Song innerhalb 15 min wird nicht doppelt gespeichert); Löschen einzeln/alle |
+| `history/HistoryRepository.kt` | Verlauf als `history.json` in `filesDir` (max. 300, gleicher Song innerhalb 15 min wird nicht doppelt gespeichert); Löschen einzeln/alle; Tippen → `YouTubeLauncher` (YouTube-App per ACTION_SEARCH, Fallback Browser-Suche) |
 | `update/UpdateChecker.kt` | Fragt `api.github.com/repos/HenryAI-stack/music-os/releases/latest`; Tag `v0.1.N` → versionCode N; Asset `*.apk` |
 | `update/AppUpdater.kt` + `UpdateReceiver.kt` | Lädt APK direkt in eine `PackageInstaller`-Session; ab Android 12 `USER_ACTION_NOT_REQUIRED` (greift, sobald die App „Installer of record“ ist), sonst Bestätigungsdialog. Braucht `REQUEST_INSTALL_PACKAGES` |
 | `MainViewModel.kt` | Mikro-Song (`packageName = MIC_SOURCE`) hat Vorrang vor Media-Session; lädt Lyrics bei Song-Wechsel (`trackKey` = artist\|title), Cache, Sync-Offset (±0,5 s, positiv = Text früher); Songdauer für Mikro-Songs kommt von LRCLIB |

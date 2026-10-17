@@ -5,7 +5,7 @@ Android-App, die erkennt, welcher Song gerade auf dem Handy läuft (Spotify, You
 - **Song-Erkennung (Handy):** über Androids MediaSession-API, ohne API-Key und ohne Kosten
 - **Song-Erkennung (Mikrofon):** eigener Fingerabdruck-Algorithmus + inoffizielle Shazam-Schnittstelle (wie SongRec), kostenlos; danach läuft der Text synchron zur Musik aus der Umgebung
 - **Lyrics:** [LRCLIB](https://lrclib.net) (kostenlos, zeitgestempelte LRC-Texte)
-- **Verlauf:** alle erkannten Songs lokal am Handy, einzeln per 🗑 oder komplett löschbar
+- **Verlauf:** alle erkannten Songs lokal am Handy, einzeln per 🗑 oder komplett löschbar; Tippen öffnet den Song auf YouTube
 - **Updates:** die App findet neue Versionen selbst und installiert sie mit einem Tipp
 - **Anzeige:** aktuelle Zeile hervorgehoben und automatisch mitscrollend, Feinjustierung ±0,5 s
 - **Sprachen:** Englisch und Deutsch, umschaltbar über das ⚙️ Zahnrad oben rechts (Standard: Systemsprache)
