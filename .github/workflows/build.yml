@@ -29,12 +29,12 @@ jobs:
         run: chmod +x gradlew && ./gradlew assembleDebug --stacktrace
 
       - name: APK umbenennen
-        run: cp app/build/outputs/apk/debug/app-debug.apk SingAlong.apk
+        run: cp app/build/outputs/apk/debug/app-debug.apk Music-os.apk
 
       - uses: actions/upload-artifact@v4
         with:
-          name: SingAlong-apk
-          path: SingAlong.apk
+          name: Music-os-apk
+          path: Music-os.apk
 
       - name: GitHub Release erstellen
         env:
@@ -42,7 +42,7 @@ jobs:
         run: |
           VERSION="0.1.${{ github.run_number }}"
           NOTES="$(git log -1 --pretty=%B | grep -v -e '^Co-Authored-By:' -e '^Claude-Session:')"
-          gh release create "v$VERSION" SingAlong.apk \
+          gh release create "v$VERSION" Music-os.apk \
             --target "$GITHUB_SHA" \
             --title "SingAlong $VERSION" \
             --notes "$NOTES" \

@@ -22,7 +22,7 @@ Paket: `at.cloudplay.singalong` · minSdk 26 · targetSdk/compileSdk 35 · Theme
 
 ## Build
 - Lokal: `./gradlew assembleDebug` (JDK 17+, Android SDK nötig)
-- CI: `.github/workflows/build.yml` baut bei jedem Push auf `main` und legt ein GitHub-Release `v0.1.<run_number>` mit `SingAlong.apk` an. Fester Download-Link: `releases/latest/download/SingAlong.apk`
+- CI: `.github/workflows/build.yml` baut bei jedem Push auf `main` und legt ein GitHub-Release `v0.1.<run_number>` mit `Music-os.apk` an. Fester Download-Link: `releases/latest/download/Music-os.apk`
 - Versionierung: `versionCode`/`versionName` kommen aus `GITHUB_RUN_NUMBER` (lokal 1). Nicht manuell hochzählen.
 - Commit-Nachrichten werden zu Release-Notes → aussagekräftig und auf Deutsch formulieren.
 - Signierung: fester Debug-Key `app/debug.keystore` (Passwort `android`) – absichtlich im Repo, damit Updates drüberinstalliert werden können. Nicht entfernen.

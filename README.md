@@ -12,7 +12,7 @@ Android-App, die erkennt, welcher Song gerade auf dem Handy läuft (Spotify, You
 Jeder Push auf `main` baut die App automatisch und veröffentlicht sie als GitHub-Release (`v0.1.<Build-Nummer>`).
 
 **Neueste Version, immer derselbe Link (gut als Lesezeichen am Handy):**
-https://github.com/HenryAI-stack/music-os/releases/latest/download/SingAlong.apk
+https://github.com/HenryAI-stack/music-os/releases/latest/download/Music-os.apk
 
 Alle Versionen: [Releases](https://github.com/HenryAI-stack/music-os/releases). Ein Build lässt sich auch manuell starten: **Actions → Build & Release APK → Run workflow**.
 
