@@ -44,6 +44,6 @@ jobs:
           NOTES="$(git log -1 --pretty=%B | grep -v -e '^Co-Authored-By:' -e '^Claude-Session:')"
           gh release create "v$VERSION" Music-os.apk \
             --target "$GITHUB_SHA" \
-            --title "SingAlong $VERSION" \
+            --title "Music-os $VERSION" \
             --notes "$NOTES" \
             --latest

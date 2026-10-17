@@ -1,4 +1,4 @@
-# 🎤 SingAlong
+# 🎤 Music-os
 
 Android-App, die erkennt, welcher Song gerade auf dem Handy läuft (Spotify, YouTube Music, Apple Music, Deezer, …), und den passenden Liedtext karaoke-artig synchron anzeigt.
 
@@ -21,7 +21,7 @@ Ordner öffnen, Gradle-Sync abwarten, ▶ Run.
 
 ## Installieren & einrichten
 1. APK aufs Handy laden und installieren (Installation aus unbekannten Quellen erlauben).
-2. App öffnen → **Zugriff erlauben** → SingAlong bei „Benachrichtigungszugriff“ aktivieren.
+2. App öffnen → **Zugriff erlauben** → Music-os bei „Benachrichtigungszugriff“ aktivieren.
 3. **Schalter ausgegraut?** (Android 13+, bei selbst installierten APKs): App-Infos → ⋮ → **Eingeschränkte Einstellungen zulassen**, dann Schritt 2 wiederholen.
 4. Musik starten, und der Text läuft mit.
 
@@ -29,7 +29,7 @@ Updates lassen sich einfach drüberinstallieren, weil alle Builds mit demselben 
 
 ## Aufbau
 ```
-app/src/main/java/at/cloudplay/singalong/
+app/src/main/java/at/cloudplay/musicos/
 ├── MainActivity.kt              Einstieg, Bildschirm bleibt an
 ├── MainViewModel.kt             Song-Wechsel → Lyrics laden, Cache, Offset
 ├── media/

@@ -1,4 +1,4 @@
-package at.cloudplay.singalong.lyrics
+package at.cloudplay.musicos.lyrics
 
 data class LyricLine(val timeMs: Long, val text: String)
 

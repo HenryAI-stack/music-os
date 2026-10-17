@@ -1,4 +1,4 @@
-# CLAUDE.md – SingAlong
+# CLAUDE.md – Music-os
 
 Android-App (Kotlin, Jetpack Compose), die den gerade laufenden Song auf dem Handy erkennt und die Lyrics karaoke-synchron anzeigt. Privates Hobbyprojekt von Max; Antworten und UI-Texte auf **Deutsch**.
 
@@ -16,9 +16,9 @@ Android-App (Kotlin, Jetpack Compose), die den gerade laufenden Song auf dem Han
 | `lyrics/LrcLibClient.kt` | lrclib.net: erst `/api/get` (exakt), dann `/api/search` mit bereinigtem Titel, dann Freitext `q`; bevorzugt `syncedLyrics`, wählt bei Suche nach Dauer-Nähe |
 | `lyrics/LrcParser.kt` | LRC-Parsing (mehrere Zeitstempel pro Zeile, Word-Tags `<mm:ss.xx>` werden entfernt), `indexAt()` per Binärsuche |
 | `MainViewModel.kt` | Lädt Lyrics bei Song-Wechsel (`trackKey` = artist\|title), Cache, Sync-Offset (±0,5 s, positiv = Text früher) |
-| `ui/SingAlongApp.kt` | Compose-UI: Berechtigungs-Screen, Header mit Fortschritt, Karaoke-Liste (aktive Zeile oben im Drittel), Sync-Leiste |
+| `ui/MusicOsApp.kt` | Compose-UI: Berechtigungs-Screen, Header mit Fortschritt, Karaoke-Liste (aktive Zeile oben im Drittel), Sync-Leiste |
 
-Paket: `at.cloudplay.singalong` · minSdk 26 · targetSdk/compileSdk 35 · Theme immer dunkel.
+Paket: `at.cloudplay.musicos` · minSdk 26 · targetSdk/compileSdk 35 · Theme immer dunkel.
 
 ## Build
 - Lokal: `./gradlew assembleDebug` (JDK 17+, Android SDK nötig)

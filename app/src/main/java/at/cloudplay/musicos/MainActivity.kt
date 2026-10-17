@@ -1,4 +1,4 @@
-package at.cloudplay.singalong
+package at.cloudplay.musicos
 
 import android.graphics.Color
 import android.os.Bundle
@@ -8,8 +8,8 @@ import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
-import at.cloudplay.singalong.ui.SingAlongApp
-import at.cloudplay.singalong.ui.SingAlongTheme
+import at.cloudplay.musicos.ui.MusicOsApp
+import at.cloudplay.musicos.ui.MusicOsTheme
 
 class MainActivity : ComponentActivity() {
 
@@ -25,8 +25,8 @@ class MainActivity : ComponentActivity() {
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
 
         setContent {
-            SingAlongTheme {
-                SingAlongApp(viewModel)
+            MusicOsTheme {
+                MusicOsApp(viewModel)
             }
         }
     }

@@ -1,4 +1,4 @@
-package at.cloudplay.singalong.ui
+package at.cloudplay.musicos.ui
 
 import android.content.Intent
 import android.net.Uri
@@ -46,16 +46,16 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import at.cloudplay.singalong.LyricsState
-import at.cloudplay.singalong.MainViewModel
-import at.cloudplay.singalong.lyrics.LrcParser
-import at.cloudplay.singalong.lyrics.LyricLine
-import at.cloudplay.singalong.media.NowPlaying
+import at.cloudplay.musicos.LyricsState
+import at.cloudplay.musicos.MainViewModel
+import at.cloudplay.musicos.lyrics.LrcParser
+import at.cloudplay.musicos.lyrics.LyricLine
+import at.cloudplay.musicos.media.NowPlaying
 import kotlinx.coroutines.delay
 import java.util.Locale
 
 @Composable
-fun SingAlongApp(vm: MainViewModel) {
+fun MusicOsApp(vm: MainViewModel) {
     val hasPermission by vm.hasPermission.collectAsStateWithLifecycle()
     val nowPlaying by vm.nowPlaying.collectAsStateWithLifecycle()
     val lyrics by vm.lyrics.collectAsStateWithLifecycle()
@@ -286,7 +286,7 @@ private fun PermissionScreen() {
             .padding(32.dp)
     ) {
         Spacer(Modifier.height(48.dp))
-        Text("🎤 SingAlong", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
+        Text("🎤 Music-os", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
         Spacer(Modifier.height(16.dp))
         Text(
             "Damit die App erkennt, welcher Song gerade läuft, braucht sie den " +

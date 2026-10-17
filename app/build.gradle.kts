@@ -7,11 +7,11 @@ plugins {
 }
 
 android {
-    namespace = "at.cloudplay.singalong"
+    namespace = "at.cloudplay.musicos"
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "at.cloudplay.singalong"
+        applicationId = "at.cloudplay.musicos"
         minSdk = 26
         targetSdk = 35
         // In GitHub Actions zählt die Build-Nummer mit (1, 2, 3 …), lokal bleibt es 1.

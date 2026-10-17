@@ -1,4 +1,4 @@
-package at.cloudplay.singalong.media
+package at.cloudplay.musicos.media
 
 import android.content.ComponentName
 import android.content.Context

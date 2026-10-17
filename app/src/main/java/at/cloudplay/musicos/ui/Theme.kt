@@ -1,4 +1,4 @@
-package at.cloudplay.singalong.ui
+package at.cloudplay.musicos.ui
 
 import android.os.Build
 import androidx.compose.material3.MaterialTheme
@@ -18,7 +18,7 @@ private val KaraokeColors = darkColorScheme(
 
 /** Immer dunkel – Karaoke sieht im Dunkeln einfach besser aus. */
 @Composable
-fun SingAlongTheme(content: @Composable () -> Unit) {
+fun MusicOsTheme(content: @Composable () -> Unit) {
     val colors = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
         dynamicDarkColorScheme(LocalContext.current)
     } else {

@@ -1,6 +1,6 @@
-package at.cloudplay.singalong.lyrics
+package at.cloudplay.musicos.lyrics
 
-import at.cloudplay.singalong.media.NowPlaying
+import at.cloudplay.musicos.media.NowPlaying
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.json.JSONArray
@@ -17,7 +17,7 @@ import kotlin.math.abs
 object LrcLibClient {
 
     private const val BASE = "https://lrclib.net/api"
-    private const val USER_AGENT = "SingAlong/0.1 (private Android hobby app)"
+    private const val USER_AGENT = "Music-os/0.1 (private Android hobby app)"
 
     data class Result(val synced: String?, val plain: String?, val instrumental: Boolean)
 

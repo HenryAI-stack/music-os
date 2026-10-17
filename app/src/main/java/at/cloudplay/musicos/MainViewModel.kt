@@ -1,13 +1,13 @@
-package at.cloudplay.singalong
+package at.cloudplay.musicos
 
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import at.cloudplay.singalong.lyrics.LrcLibClient
-import at.cloudplay.singalong.lyrics.LrcParser
-import at.cloudplay.singalong.lyrics.LyricLine
-import at.cloudplay.singalong.media.NowPlaying
-import at.cloudplay.singalong.media.NowPlayingRepository
+import at.cloudplay.musicos.lyrics.LrcLibClient
+import at.cloudplay.musicos.lyrics.LrcParser
+import at.cloudplay.musicos.lyrics.LyricLine
+import at.cloudplay.musicos.media.NowPlaying
+import at.cloudplay.musicos.media.NowPlayingRepository
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
