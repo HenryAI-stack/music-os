@@ -1,8 +1,12 @@
 package at.cloudplay.musicos.ui
 
+import android.Manifest
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.net.Uri
 import android.provider.Settings
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.layout.Arrangement
@@ -17,18 +21,22 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
+import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.State
@@ -45,9 +53,12 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import at.cloudplay.musicos.LyricsState
+import at.cloudplay.musicos.MIC_SOURCE
 import at.cloudplay.musicos.MainViewModel
+import at.cloudplay.musicos.MicState
 import at.cloudplay.musicos.lyrics.LrcParser
 import at.cloudplay.musicos.lyrics.LyricLine
 import at.cloudplay.musicos.media.NowPlaying
@@ -60,6 +71,17 @@ fun MusicOsApp(vm: MainViewModel) {
     val nowPlaying by vm.nowPlaying.collectAsStateWithLifecycle()
     val lyrics by vm.lyrics.collectAsStateWithLifecycle()
     val offsetMs by vm.offsetMs.collectAsStateWithLifecycle()
+    val micState by vm.micState.collectAsStateWithLifecycle()
+
+    val context = LocalContext.current
+    val micPermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { granted -> if (granted) vm.startListening() else vm.onMicPermissionDenied() }
+    val onMicClick: () -> Unit = {
+        val granted = ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) ==
+            PackageManager.PERMISSION_GRANTED
+        if (granted) vm.startListening() else micPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
+    }
 
     Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
         Column(
@@ -68,22 +90,40 @@ fun MusicOsApp(vm: MainViewModel) {
                 .safeDrawingPadding()
         ) {
             val track = nowPlaying
-            when {
-                !hasPermission -> PermissionScreen()
-                track == null -> CenterMessage(
-                    "Starte einen Song in Spotify, YouTube Music oder einer anderen " +
-                        "Musik-App – Titel und Text erscheinen dann hier."
-                )
-                else -> {
-                    val position = rememberPlaybackPosition(track, offsetMs)
-                    TrackHeader(track, position)
-                    Box(Modifier.weight(1f)) {
-                        LyricsPane(lyrics, position, onRetry = vm::retry)
-                    }
-                    if (lyrics is LyricsState.Synced) {
-                        SyncBar(offsetMs, onNudge = vm::nudgeOffset)
-                    }
+            if (track == null) {
+                Box(Modifier.weight(1f)) {
+                    HomeScreen(
+                        hasNotificationAccess = hasPermission,
+                        listening = micState is MicState.Listening,
+                        onMicClick = onMicClick,
+                    )
                 }
+                MicBar(
+                    state = micState,
+                    showButton = false,
+                    isMicTrack = false,
+                    onMicClick = onMicClick,
+                    onCancel = vm::cancelListening,
+                    onDismiss = vm::dismissMicMessage,
+                )
+            } else {
+                val position = rememberPlaybackPosition(track, offsetMs)
+                val isMicTrack = track.packageName == MIC_SOURCE
+                TrackHeader(track, position, isMicTrack, onClose = vm::closeMicTrack)
+                Box(Modifier.weight(1f)) {
+                    LyricsPane(lyrics, position, onRetry = vm::retry)
+                }
+                if (lyrics is LyricsState.Synced) {
+                    SyncBar(offsetMs, onNudge = vm::nudgeOffset)
+                }
+                MicBar(
+                    state = micState,
+                    showButton = true,
+                    isMicTrack = isMicTrack,
+                    onMicClick = onMicClick,
+                    onCancel = vm::cancelListening,
+                    onDismiss = vm::dismissMicMessage,
+                )
             }
         }
     }
@@ -103,14 +143,157 @@ private fun rememberPlaybackPosition(track: NowPlaying, offsetMs: Long): State<L
     return position
 }
 
+// ---------- Startbildschirm ----------
+
 @Composable
-private fun TrackHeader(track: NowPlaying, position: State<Long>) {
+private fun HomeScreen(hasNotificationAccess: Boolean, listening: Boolean, onMicClick: () -> Unit) {
+    val context = LocalContext.current
+    val colors = MaterialTheme.colorScheme
+    Column(
+        Modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+            .padding(horizontal = 32.dp, vertical = 24.dp)
+    ) {
+        Spacer(Modifier.height(24.dp))
+        Text("🎤 Music-os", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
+        Spacer(Modifier.height(24.dp))
+
+        Button(
+            onClick = onMicClick,
+            enabled = !listening,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(64.dp),
+        ) { Text("🎤  Song über Mikrofon erkennen", style = MaterialTheme.typography.titleMedium) }
+        Spacer(Modifier.height(8.dp))
+        Text(
+            "Halte das Handy Richtung Musik – nach 4 bis 12 Sekunden steht der Song fest, " +
+                "und der Text läuft synchron mit.",
+            style = MaterialTheme.typography.bodyMedium,
+            color = colors.onSurfaceVariant,
+        )
+
+        Spacer(Modifier.height(28.dp))
+        HorizontalDivider()
+        Spacer(Modifier.height(20.dp))
+
+        Text("Musik auf diesem Handy", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+        Spacer(Modifier.height(8.dp))
+        if (hasNotificationAccess) {
+            Text(
+                "Starte einen Song in Spotify, YouTube Music oder einer anderen Musik-App – " +
+                    "er erscheint hier automatisch.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = colors.onSurfaceVariant,
+            )
+        } else {
+            Text(
+                "Damit Music-os automatisch erkennt, was auf dem Handy läuft, braucht es den " +
+                    "Benachrichtigungszugriff. Gelesen werden nur die Wiedergabe-Infos deiner " +
+                    "Musik-Apps (Titel, Interpret, Album, Position).",
+                style = MaterialTheme.typography.bodyMedium,
+                color = colors.onSurfaceVariant,
+            )
+            Spacer(Modifier.height(12.dp))
+            OutlinedButton(
+                onClick = { context.startActivity(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS)) },
+                modifier = Modifier.fillMaxWidth(),
+            ) { Text("Zugriff erlauben") }
+            Spacer(Modifier.height(12.dp))
+            Text(
+                "Schalter ausgegraut? Bei selbst installierten APKs (ab Android 13) zuerst die " +
+                    "App-Infos öffnen, oben rechts auf ⋮ tippen und „Eingeschränkte Einstellungen " +
+                    "zulassen“ wählen.",
+                style = MaterialTheme.typography.bodySmall,
+                color = colors.onSurfaceVariant,
+            )
+            TextButton(
+                onClick = {
+                    context.startActivity(
+                        Intent(
+                            Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                            Uri.fromParts("package", context.packageName, null),
+                        )
+                    )
+                },
+            ) { Text("App-Infos öffnen") }
+        }
+    }
+}
+
+// ---------- Mikrofon-Leiste ----------
+
+@Composable
+private fun MicBar(
+    state: MicState,
+    showButton: Boolean,
+    isMicTrack: Boolean,
+    onMicClick: () -> Unit,
+    onCancel: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    when (state) {
+        is MicState.Listening -> Card(
+            Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 8.dp)
+        ) {
+            Column(Modifier.padding(16.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        "🎧 Hört zu …",
+                        style = MaterialTheme.typography.titleSmall,
+                        modifier = Modifier.weight(1f),
+                    )
+                    TextButton(onClick = onCancel) { Text("Abbrechen") }
+                }
+                LinearProgressIndicator(progress = { state.progress }, modifier = Modifier.fillMaxWidth())
+            }
+        }
+        is MicState.Message -> Card(
+            Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 8.dp)
+        ) {
+            Row(Modifier.padding(start = 16.dp, end = 8.dp, top = 8.dp, bottom = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+                Text(state.text, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
+                Spacer(Modifier.width(8.dp))
+                TextButton(onClick = onDismiss) { Text("OK") }
+            }
+        }
+        MicState.Idle -> if (showButton) {
+            OutlinedButton(
+                onClick = onMicClick,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
+            ) { Text(if (isMicTrack) "🎤 Neu erkennen" else "🎤 Über Mikrofon erkennen") }
+        }
+    }
+}
+
+// ---------- Song-Anzeige ----------
+
+@Composable
+private fun TrackHeader(track: NowPlaying, position: State<Long>, isMicTrack: Boolean, onClose: () -> Unit) {
     val colors = MaterialTheme.colorScheme
     Column(
         Modifier
             .fillMaxWidth()
-            .padding(horizontal = 24.dp, vertical = 16.dp)
+            .padding(horizontal = 24.dp, vertical = 12.dp)
     ) {
+        if (isMicTrack) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    "🎤 Über Mikrofon erkannt",
+                    style = MaterialTheme.typography.labelLarge,
+                    color = colors.tertiary,
+                    modifier = Modifier.weight(1f),
+                )
+                TextButton(onClick = onClose) { Text("Schließen") }
+            }
+        }
         Text(
             track.title,
             style = MaterialTheme.typography.headlineSmall,
@@ -240,7 +423,7 @@ private fun SyncBar(offsetMs: Long, onNudge: (Long) -> Unit) {
     Row(
         Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 8.dp),
+            .padding(horizontal = 16.dp, vertical = 4.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -273,53 +456,6 @@ private fun CenterMessage(text: String, actionLabel: String? = null, onAction: (
             Spacer(Modifier.height(16.dp))
             Button(onClick = onAction) { Text(actionLabel) }
         }
-    }
-}
-
-@Composable
-private fun PermissionScreen() {
-    val context = LocalContext.current
-    Column(
-        Modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .padding(32.dp)
-    ) {
-        Spacer(Modifier.height(48.dp))
-        Text("🎤 Music-os", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
-        Spacer(Modifier.height(16.dp))
-        Text(
-            "Damit die App erkennt, welcher Song gerade läuft, braucht sie den " +
-                "Benachrichtigungszugriff. Sie liest damit nur die Wiedergabe-Infos deiner " +
-                "Musik-Apps aus (Titel, Interpret, Album, Position).",
-            style = MaterialTheme.typography.bodyLarge,
-        )
-        Spacer(Modifier.height(24.dp))
-        Button(
-            onClick = { context.startActivity(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS)) },
-            modifier = Modifier.fillMaxWidth(),
-        ) { Text("Zugriff erlauben") }
-
-        Spacer(Modifier.height(32.dp))
-        Text(
-            "Schalter ausgegraut? Bei selbst installierten APKs (ab Android 13) zuerst " +
-                "die App-Infos öffnen, oben rechts auf ⋮ tippen und " +
-                "„Eingeschränkte Einstellungen zulassen“ wählen. Danach klappt es.",
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-        Spacer(Modifier.height(12.dp))
-        OutlinedButton(
-            onClick = {
-                context.startActivity(
-                    Intent(
-                        Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
-                        Uri.fromParts("package", context.packageName, null),
-                    )
-                )
-            },
-            modifier = Modifier.fillMaxWidth(),
-        ) { Text("App-Infos öffnen") }
     }
 }
 

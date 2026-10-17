@@ -25,8 +25,17 @@ jobs:
 
       - uses: gradle/actions/setup-gradle@v4
 
+      - name: Unit-Tests
+        run: chmod +x gradlew && ./gradlew testDebugUnitTest
+
+      - name: Live-Test gegen Shazam (blockiert das Release nicht)
+        continue-on-error: true
+        env:
+          SHAZAM_LIVE_TEST: "1"
+        run: ./gradlew testDebugUnitTest --tests "*ShazamClientTest.liveEndpointAcceptsSignature" --rerun
+
       - name: Build APK
-        run: chmod +x gradlew && ./gradlew assembleDebug --stacktrace
+        run: ./gradlew assembleDebug --stacktrace
 
       - name: APK umbenennen
         run: cp app/build/outputs/apk/debug/app-debug.apk Music-os.apk

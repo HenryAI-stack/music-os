@@ -19,7 +19,13 @@ object LrcLibClient {
     private const val BASE = "https://lrclib.net/api"
     private const val USER_AGENT = "Music-os/0.1 (private Android hobby app)"
 
-    data class Result(val synced: String?, val plain: String?, val instrumental: Boolean)
+    data class Result(
+        val synced: String?,
+        val plain: String?,
+        val instrumental: Boolean,
+        /** Songdauer laut LRCLIB in Sekunden (0 = unbekannt). */
+        val durationSec: Double = 0.0,
+    )
 
     /** Sucht Lyrics zum Song; bevorzugt synchronisierte. Null = nichts gefunden. */
     suspend fun find(track: NowPlaying): Result? = withContext(Dispatchers.IO) {
@@ -77,6 +83,7 @@ object LrcLibClient {
         synced = o.optStringOrNull("syncedLyrics"),
         plain = o.optStringOrNull("plainLyrics"),
         instrumental = o.optBoolean("instrumental", false),
+        durationSec = o.optDouble("duration", 0.0).takeIf { !it.isNaN() } ?: 0.0,
     )
 
     private fun JSONObject.optStringOrNull(key: String): String? =

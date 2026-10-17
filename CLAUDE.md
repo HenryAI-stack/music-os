@@ -15,7 +15,10 @@ Android-App (Kotlin, Jetpack Compose), die den gerade laufenden Song auf dem Han
 | `media/NowPlayingListener.kt` | Leerer `NotificationListenerService` – nur für die Berechtigung |
 | `lyrics/LrcLibClient.kt` | lrclib.net: erst `/api/get` (exakt), dann `/api/search` mit bereinigtem Titel, dann Freitext `q`; bevorzugt `syncedLyrics`, wählt bei Suche nach Dauer-Nähe |
 | `lyrics/LrcParser.kt` | LRC-Parsing (mehrere Zeitstempel pro Zeile, Word-Tags `<mm:ss.xx>` werden entfernt), `indexAt()` per Binärsuche |
-| `MainViewModel.kt` | Lädt Lyrics bei Song-Wechsel (`trackKey` = artist\|title), Cache, Sync-Offset (±0,5 s, positiv = Text früher) |
+| `recognition/ShazamSignature.kt` | Fingerabdruck-Generator, 1:1-Port von shazamio `algorithm.py`/`signature.py` (16 kHz, max. 12 s). Reines Kotlin → JVM-testbar |
+| `recognition/ShazamClient.kt` | POST an `amp.shazam.com/discovery/v5/.../tag/{uuid}/{uuid}` (inoffiziell, kostenlos). `matches[0].offset` = Songposition beim Aufnahmestart → Karaoke-Sync |
+| `recognition/MicRecognizer.kt` | AudioRecord (16 kHz, Fallback 48/44,1 kHz + `Resampler`), Erkennungsversuche nach 4/8/12 s parallel zur Aufnahme |
+| `MainViewModel.kt` | Mikro-Song (`packageName = MIC_SOURCE`) hat Vorrang vor Media-Session; lädt Lyrics bei Song-Wechsel (`trackKey` = artist\|title), Cache, Sync-Offset (±0,5 s, positiv = Text früher); Songdauer für Mikro-Songs kommt von LRCLIB |
 | `ui/MusicOsApp.kt` | Compose-UI: Berechtigungs-Screen, Header mit Fortschritt, Karaoke-Liste (aktive Zeile oben im Drittel), Sync-Leiste |
 
 Paket: `at.cloudplay.musicos` · minSdk 26 · targetSdk/compileSdk 35 · Theme immer dunkel.
@@ -28,12 +31,16 @@ Paket: `at.cloudplay.musicos` · minSdk 26 · targetSdk/compileSdk 35 · Theme i
 - Signierung: fester Debug-Key `app/debug.keystore` (Passwort `android`) – absichtlich im Repo, damit Updates drüberinstalliert werden können. Nicht entfernen.
 - Versionen: AGP 8.10.1, Kotlin 2.2.0, Compose BOM 2025.05.01, Gradle 8.14.3
 
+## Tests
+- `./gradlew testDebugUnitTest` – u. a. `ShazamSignatureTest` vergleicht mit Referenzdaten aus shazamio (`src/test/resources/shazam/`, Generator `gen_golden.py`). Bei Änderungen am Algorithmus muss dieser Test grün bleiben.
+- Live-Test gegen Shazam läuft nur mit `SHAZAM_LIVE_TEST=1` (in CI, blockiert Releases nicht).
+
 ## Bekannte Stolpersteine
 - Android 13+: Bei sideloaded APKs ist der Benachrichtigungszugriff gesperrt, bis man in den App-Infos „Eingeschränkte Einstellungen zulassen“ aktiviert. Der Berechtigungs-Screen erklärt das.
 - Manche Player liefern `lastPositionUpdateTime = 0` oder unsaubere Titel (YouTube). Beides wird abgefangen bzw. in `cleanTitle()` bereinigt.
 - LRCLIB-Requests immer mit `User-Agent`-Header.
 
 ## Ideen / nächste Schritte
-- Mikrofon-Modus für Musik aus der Umgebung (kostenlose Optionen begrenzt, siehe README)
+- Mikro-Modus: automatisch neu erkennen, wenn der Song zu Ende ist
 - Wort-genaues Highlighting, wo LRCLIB Word-Timestamps liefert
 - Lyrics-Cache auf Disk für Offline-Nutzung
